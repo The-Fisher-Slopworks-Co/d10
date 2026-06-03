@@ -17,8 +17,11 @@ and deployed to GitHub Pages.
 
 - **One d10, done well.** Click (or press <kbd>Space</kbd>/<kbd>Enter</kbd>) to roll a
   uniform result from **1–10**.
-- **A roll worth watching.** A tactile tumble-and-settle animation with the number
-  landing on the true result — never a mismatch between what spins and what stops.
+- **A real, 3D throw.** The die is an actual pentagonal trapezohedron rendered in 3D
+  on a canvas — it's flung up, tumbles on a random axis, arcs back down and bounces
+  before it settles. The result is chosen up front and the tumble is choreographed to
+  land on it, so the face you read is always the true roll — never a mismatch between
+  what spins and what stops.
 - **Accessible.** Respects `prefers-reduced-motion` with a calm fallback, is fully
   keyboard-operable, and announces each result to screen readers.
 - **Featherweight.** No framework, no runtime dependencies, no network calls. Works
@@ -26,8 +29,9 @@ and deployed to GitHub Pages.
 
 ## Tech stack
 
-- [**Bun**](https://bun.com) — runtime, bundler, and dev server (no Webpack/Vite).
-- **Vanilla TypeScript** + hand-written **CSS** animations. That's it.
+- [**Bun**](https://bun.com) — runtime, bundler, dev server, and test runner (no Webpack/Vite).
+- **Vanilla TypeScript** + a hand-written **canvas** 3D renderer (no three.js, no
+  physics engine) + hand-written **CSS**. That's it.
 
 ## Local development
 
