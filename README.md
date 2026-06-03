@@ -9,7 +9,7 @@ TypeScript (no 3D or physics library), bundled to static files, and deployed to
 GitHub Pages.
 
 <p align="center">
-  <img src="./assets/screenshot.png" alt="A faceted purple ten-sided die showing 10, with a Roll button" width="640" />
+  <img src="./assets/screenshot.png" alt="A faceted purple ten-sided die tumbling in mid-air mid-throw, numbered faces at an angle, above a Roll button" width="640" />
 </p>
 
 > **Live:** `https://the-fisher-slopworks-co.github.io/d10/`
