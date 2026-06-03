@@ -2,9 +2,11 @@
 
 **Roll a single ten-sided die — beautifully.**
 
-A tiny, fast, dependency-free web toy: one d10, one button, and a satisfying
-roll animation. Built with Bun and vanilla TypeScript, bundled to static files,
-and deployed to GitHub Pages.
+A tiny, fast, dependency-free web toy: one d10, one button, and a real 3D throw.
+The die is an actual pentagonal trapezohedron rendered on a canvas — it's flung
+up, tumbles, and settles on the rolled number. Built with Bun and vanilla
+TypeScript (no 3D or physics library), bundled to static files, and deployed to
+GitHub Pages.
 
 <p align="center">
   <img src="./assets/screenshot.png" alt="A faceted purple ten-sided die showing 10, with a Roll button" width="640" />
@@ -45,6 +47,7 @@ bun run dev        # dev server with hot reload → http://localhost:3000
 Other scripts:
 
 ```bash
+bun test           # headless correctness tests (the roll invariant + geometry)
 bun run build      # bundle to ./dist (what gets published)
 bun run preview    # build + serve dist under a /d10/ sub-path, like GitHub Pages
                    # → http://localhost:4173/d10/
