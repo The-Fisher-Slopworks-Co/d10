@@ -1,0 +1,15 @@
+{
+  "name": "d10",
+  "version": "1.0.0",
+  "description": "Roll a single ten-sided die, beautifully.",
+  "private": true,
+  "type": "module",
+  "scripts": {
+    "dev": "bun ./src/index.html",
+    "build": "bun run build.ts",
+    "preview": "bun run build && bun ./scripts/serve-dist.ts"
+  },
+  "devDependencies": {
+    "@types/bun": "latest"
+  }
+}

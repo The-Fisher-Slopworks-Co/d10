@@ -1,0 +1,157 @@
+<!doctype html>
+<html lang="en">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, viewport-fit=cover" />
+    <link rel="icon" type="image/svg+xml" href="./favicon.svg" />
+    <link rel="stylesheet" href="./style.css" />
+    <meta name="description" content="Roll a single ten-sided die, beautifully." />
+    <meta name="color-scheme" content="dark" />
+    <title>d10 — roll a ten-sided die</title>
+    <script type="module" src="./main.ts"></script>
+  </head>
+  <body>
+    <h1 class="title"><b>d</b>10</h1>
+
+    <div class="stage" id="stage">
+      <div class="shadow" id="shadow" aria-hidden="true"></div>
+
+      <div
+        class="die-wrap"
+        id="die"
+        tabindex="0"
+        role="button"
+        aria-label="Ten-sided die, currently showing 10. Activate to roll."
+      >
+        <!-- Pentagonal trapezohedron silhouette, drawn as a 2D-projected solid -->
+        <svg viewBox="0 0 200 268" id="dieSvg" aria-hidden="true">
+          <defs>
+            <!-- upper-left lit kite -->
+            <linearGradient id="gTopL" x1="0" y1="0" x2="0.7" y2="1">
+              <stop offset="0" stop-color="#c9a6ff" />
+              <stop offset="0.5" stop-color="#8e5fe0" />
+              <stop offset="1" stop-color="#5e36ab" />
+            </linearGradient>
+            <!-- upper-right kite (slightly darker, light from upper-left) -->
+            <linearGradient id="gTopR" x1="1" y1="0" x2="0.3" y2="1">
+              <stop offset="0" stop-color="#9d72e6" />
+              <stop offset="0.55" stop-color="#6a3fc0" />
+              <stop offset="1" stop-color="#46278a" />
+            </linearGradient>
+            <!-- central front kite (the face that holds the number) -->
+            <linearGradient id="gFront" x1="0.2" y1="0" x2="0.8" y2="1">
+              <stop offset="0" stop-color="#b48bff" />
+              <stop offset="0.45" stop-color="#7b4fd6" />
+              <stop offset="1" stop-color="#4d2c97" />
+            </linearGradient>
+            <!-- left mid-belt facet -->
+            <linearGradient id="gMidL" x1="0" y1="0" x2="1" y2="0.6">
+              <stop offset="0" stop-color="#6e44c4" />
+              <stop offset="1" stop-color="#3a2174" />
+            </linearGradient>
+            <!-- right mid-belt facet -->
+            <linearGradient id="gMidR" x1="1" y1="0" x2="0" y2="0.6">
+              <stop offset="0" stop-color="#5c37a8" />
+              <stop offset="1" stop-color="#2f1b60" />
+            </linearGradient>
+            <!-- lower-left bottom kite -->
+            <linearGradient id="gBotL" x1="0" y1="0" x2="0.6" y2="1">
+              <stop offset="0" stop-color="#4a2c92" />
+              <stop offset="1" stop-color="#28164f" />
+            </linearGradient>
+            <!-- lower-right bottom kite -->
+            <linearGradient id="gBotR" x1="1" y1="0" x2="0.4" y2="1">
+              <stop offset="0" stop-color="#3e2580" />
+              <stop offset="1" stop-color="#1f1142" />
+            </linearGradient>
+            <!-- front facet sheen -->
+            <radialGradient id="sheen" cx="0.4" cy="0.28" r="0.85">
+              <stop offset="0" stop-color="#ffffff" stop-opacity="0.42" />
+              <stop offset="0.3" stop-color="#ffffff" stop-opacity="0.10" />
+              <stop offset="1" stop-color="#ffffff" stop-opacity="0" />
+            </radialGradient>
+            <!-- rim light -->
+            <linearGradient id="rim" x1="0" y1="0" x2="1" y2="1">
+              <stop offset="0" stop-color="#d9c4ff" stop-opacity="0.9" />
+              <stop offset="0.5" stop-color="#6cf6e0" stop-opacity="0.25" />
+              <stop offset="1" stop-color="#2a1850" stop-opacity="0.7" />
+            </linearGradient>
+
+            <filter id="blur" x="-40%" y="-40%" width="180%" height="180%">
+              <feGaussianBlur id="blurNode" in="SourceGraphic" stdDeviation="0" />
+            </filter>
+          </defs>
+
+          <g id="dieBody" filter="url(#blur)">
+            <!-- TOP THREE KITES (fan from apex) -->
+            <path d="M100 8 L34 88 L100 78 Z" fill="url(#gTopL)" />
+            <path d="M100 8 L166 88 L100 78 Z" fill="url(#gTopR)" />
+            <path d="M100 8 L34 88 L12 150 L58 132 Z" fill="url(#gTopL)" opacity="0.92" />
+            <path d="M100 8 L166 88 L188 150 L142 132 Z" fill="url(#gTopR)" opacity="0.92" />
+
+            <!-- FRONT CENTRAL KITE (holds the number) -->
+            <path id="frontFace" d="M100 78 L58 132 L100 210 L142 132 Z" fill="url(#gFront)" />
+
+            <!-- LOWER kites -->
+            <path d="M12 150 L58 132 L100 210 L60 192 Z" fill="url(#gBotL)" />
+            <path d="M188 150 L142 132 L100 210 L140 192 Z" fill="url(#gBotR)" />
+            <path d="M12 150 L60 192 L100 260 Z" fill="url(#gMidL)" />
+            <path d="M188 150 L140 192 L100 260 Z" fill="url(#gMidR)" />
+            <path d="M60 192 L100 210 L100 260 Z" fill="url(#gBotL)" opacity="0.85" />
+            <path d="M140 192 L100 210 L100 260 Z" fill="url(#gBotR)" opacity="0.85" />
+
+            <!-- sheen overlay on front face -->
+            <path d="M100 78 L58 132 L100 210 L142 132 Z" fill="url(#sheen)" />
+
+            <!-- crisp edge strokes for facets -->
+            <g
+              fill="none"
+              stroke="#1a0e34"
+              stroke-opacity="0.55"
+              stroke-width="1.4"
+              stroke-linejoin="round"
+            >
+              <path d="M100 8 L34 88 M100 8 L166 88 M100 8 L100 78" />
+              <path d="M34 88 L12 150 M166 88 L188 150" />
+              <path d="M34 88 L58 132 L100 78 L142 132 L166 88" />
+              <path d="M12 150 L60 192 L100 210 L140 192 L188 150" />
+              <path d="M58 132 L100 210 L142 132" />
+              <path d="M12 150 L100 260 L188 150" />
+              <path d="M60 192 L100 260 M140 192 L100 260 M100 210 L100 260" />
+            </g>
+
+            <!-- subtle teal rim highlight on outline -->
+            <path
+              d="M100 8 L166 88 L188 150 L100 260 L12 150 L34 88 Z"
+              fill="none"
+              stroke="url(#rim)"
+              stroke-width="2.2"
+              stroke-opacity="0.6"
+              stroke-linejoin="round"
+            />
+
+            <!-- THE NUMBER -->
+            <text
+              id="numText"
+              class="pip"
+              x="100"
+              y="142"
+              text-anchor="middle"
+              dominant-baseline="central"
+              font-size="58"
+              font-family="system-ui, -apple-system, 'Segoe UI', Roboto, sans-serif"
+            >
+              10
+            </text>
+          </g>
+        </svg>
+      </div>
+
+      <div class="sparks" id="sparks" aria-hidden="true"></div>
+    </div>
+
+    <button class="roll-btn" id="rollBtn" type="button">Roll</button>
+
+    <div class="sr-only" id="live" aria-live="polite" role="status"></div>
+  </body>
+</html>

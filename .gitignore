@@ -1,0 +1,11 @@
+# dependencies
+node_modules
+
+# build output
+dist
+
+# caches
+.cache
+
+# OS files
+.DS_Store

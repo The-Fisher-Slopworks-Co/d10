@@ -1,0 +1,265 @@
+:root {
+  --bg-0: #0a0710;
+  --bg-1: #15101f;
+  --accent: #a974ff; /* arcane purple */
+  --accent-2: #6cf6e0; /* teal counter-light */
+  --accent-deep: #5a2db0;
+  --ink: #f3eefb;
+  --muted: #9b8fb5;
+  --die-size: clamp(170px, 44vmin, 340px);
+}
+
+* {
+  box-sizing: border-box;
+}
+
+html,
+body {
+  height: 100%;
+  margin: 0;
+}
+
+body {
+  font-family: system-ui, -apple-system, "Segoe UI", Roboto, sans-serif;
+  color: var(--ink);
+  background:
+    radial-gradient(120% 90% at 50% -10%, #1c1430 0%, var(--bg-1) 38%, var(--bg-0) 78%),
+    var(--bg-0);
+  min-height: 100dvh;
+  display: flex;
+  flex-direction: column;
+  align-items: center;
+  justify-content: center;
+  gap: clamp(28px, 6vmin, 56px);
+  padding: max(24px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom));
+  overflow: hidden;
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* subtle vignette + ambient floor glow that slowly breathes */
+body::before {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  background: radial-gradient(70% 50% at 50% 64%, rgba(169, 116, 255, 0.1), transparent 70%);
+  z-index: 0;
+  opacity: 0.85;
+  animation: breathe 8s ease-in-out infinite;
+}
+
+@keyframes breathe {
+  0%,
+  100% {
+    opacity: 0.55;
+  }
+  50% {
+    opacity: 1;
+  }
+}
+body::after {
+  content: "";
+  position: fixed;
+  inset: 0;
+  pointer-events: none;
+  box-shadow: inset 0 0 220px 40px rgba(0, 0, 0, 0.65);
+  z-index: 0;
+}
+
+.title {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  font-size: clamp(15px, 3.4vmin, 20px);
+  letter-spacing: 0.22em;
+  text-transform: lowercase;
+  font-weight: 600;
+  padding-left: 0.22em;
+  color: var(--muted);
+  text-shadow: 0 0 22px rgba(169, 116, 255, 0.25);
+  user-select: none;
+}
+.title b {
+  color: var(--ink);
+  font-weight: 700;
+}
+
+/* ----- stage ----- */
+.stage {
+  position: relative;
+  z-index: 1;
+  width: var(--die-size);
+  height: calc(var(--die-size) * 1.34);
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  perspective: 1100px;
+  perspective-origin: 50% 38%;
+}
+
+/* contact shadow on the "floor" */
+.shadow {
+  position: absolute;
+  left: 50%;
+  bottom: 2%;
+  width: 74%;
+  height: 13%;
+  transform: translateX(-50%) scale(1);
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgba(0, 0, 0, 0.62) 0%,
+    rgba(0, 0, 0, 0.34) 42%,
+    transparent 72%
+  );
+  filter: blur(7px);
+  border-radius: 50%;
+  will-change: transform, opacity, filter;
+  z-index: 0;
+}
+
+.die-wrap {
+  position: relative;
+  width: 100%;
+  height: 100%;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  transform-style: preserve-3d;
+  will-change: transform;
+  z-index: 1;
+  cursor: pointer;
+  outline: none;
+}
+.die-wrap svg {
+  width: 100%;
+  height: 100%;
+  display: block;
+  overflow: visible;
+  filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.55));
+}
+
+/* ambient glow halo behind die */
+.die-wrap::before {
+  content: "";
+  position: absolute;
+  left: 50%;
+  top: 46%;
+  width: 84%;
+  height: 84%;
+  transform: translate(-50%, -50%);
+  background: radial-gradient(
+    50% 50% at 50% 50%,
+    rgba(169, 116, 255, 0.34),
+    rgba(108, 246, 224, 0.1) 45%,
+    transparent 70%
+  );
+  filter: blur(20px);
+  z-index: -1;
+  opacity: 0.85;
+  transition: opacity 0.35s ease;
+}
+.stage.spinning .die-wrap::before {
+  opacity: 1;
+}
+
+/* the rolled number */
+.pip {
+  font-variant-numeric: tabular-nums;
+  font-weight: 800;
+  fill: #fbf8ff;
+}
+
+/* particle burst container */
+.sparks {
+  position: absolute;
+  left: 50%;
+  top: 42%;
+  width: 0;
+  height: 0;
+  z-index: 3;
+  pointer-events: none;
+}
+.spark {
+  position: absolute;
+  left: 0;
+  top: 0;
+  width: 7px;
+  height: 7px;
+  margin: -3.5px 0 0 -3.5px;
+  border-radius: 50%;
+  background: radial-gradient(circle at 50% 50%, #fff 0%, var(--accent) 45%, rgba(169, 116, 255, 0) 75%);
+  will-change: transform, opacity;
+}
+
+/* ----- roll button ----- */
+.roll-btn {
+  position: relative;
+  z-index: 2;
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.22em;
+  text-transform: uppercase;
+  font-size: clamp(13px, 2.5vmin, 15px);
+  color: var(--ink);
+  padding: 15px 42px;
+  border-radius: 999px;
+  border: 1px solid rgba(169, 116, 255, 0.55);
+  background:
+    linear-gradient(180deg, rgba(169, 116, 255, 0.22), rgba(90, 45, 176, 0.16)),
+    rgba(20, 14, 32, 0.7);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 10px 30px -8px rgba(120, 60, 220, 0.55),
+    inset 0 1px 0 rgba(255, 255, 255, 0.12);
+  transition:
+    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+    box-shadow 0.25s ease,
+    border-color 0.25s ease,
+    background 0.25s ease;
+  user-select: none;
+}
+.roll-btn:hover {
+  border-color: rgba(169, 116, 255, 0.9);
+  box-shadow:
+    0 0 0 1px rgba(0, 0, 0, 0.3),
+    0 14px 38px -8px rgba(140, 80, 240, 0.75),
+    inset 0 1px 0 rgba(255, 255, 255, 0.18);
+  transform: translateY(-1px);
+}
+.roll-btn:active {
+  transform: translateY(1px) scale(0.985);
+}
+.roll-btn:focus-visible,
+.die-wrap:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 4px;
+}
+.die-wrap:focus-visible {
+  border-radius: 12px;
+}
+
+.sr-only {
+  position: absolute;
+  width: 1px;
+  height: 1px;
+  padding: 0;
+  margin: -1px;
+  overflow: hidden;
+  clip: rect(0 0 0 0);
+  white-space: nowrap;
+  border: 0;
+}
+
+@media (prefers-reduced-motion: reduce) {
+  .roll-btn {
+    transition:
+      background 0.2s ease,
+      border-color 0.2s ease;
+  }
+  body::before {
+    animation: none;
+    opacity: 0.85;
+  }
+}
