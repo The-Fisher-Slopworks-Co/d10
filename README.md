@@ -81,3 +81,7 @@ paths so it works under that sub-path without extra configuration.
 
 > Forking under a different repo name works too: the relative paths mean you don't
 > need to hardcode the repo name anywhere.
+
+## License
+
+AGPL-3.0-or-later. See [LICENSE](LICENSE).
