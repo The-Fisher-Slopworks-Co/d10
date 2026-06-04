@@ -375,6 +375,7 @@ function announce(n: number): void {
   current = n;
   setDieLabel(n);
   live.textContent = "Rolled " + n + ".";
+  vibrate(VIBRATE_LAND); // a short tick when a result comes up (where supported)
 }
 
 function setDieLabel(n: number): void {
@@ -387,6 +388,7 @@ function setDieLabel(n: number): void {
 // ----- throws -----
 // The Roll button / keyboard fire a fair machine throw.
 function roll(): void {
+  enableMotion(); // first gesture also unlocks shake-to-roll (iOS needs this)
   clearAllSparks();
   live.textContent = "";
   if (reduceQuery.matches) {
@@ -425,6 +427,7 @@ function dieScreenRadius(): number {
 }
 
 function onPointerDown(ev: PointerEvent): void {
+  enableMotion(); // grabbing the die is also a gesture that can unlock motion
   if (reduceQuery.matches) {
     roll();
     return;
@@ -587,6 +590,90 @@ function clearAllSparks(): void {
   while (sparks.firstChild) sparks.removeChild(sparks.firstChild);
 }
 
+// ----- haptics (vibrate on devices that support it) -----
+// iOS has no Vibration API, and Android Chrome only vibrates after the page has
+// seen a real user gesture. Feature-detect and swallow failures so unsupported
+// devices simply stay silent.
+const canVibrate = typeof navigator.vibrate === "function";
+const VIBRATE_LAND = 24; // ms tick when a roll settles on a number
+const VIBRATE_SHAKE: number[] = [18, 24, 38]; // buzz·pause·buzz — a rattle confirming a shake
+
+function vibrate(pattern: number | number[]): void {
+  if (!canVibrate) return;
+  try {
+    navigator.vibrate(pattern);
+  } catch {
+    /* vibrate can throw before any gesture on some browsers — ignore */
+  }
+}
+
+// ----- shake to roll (device motion sensors) -----
+// On a phone with motion sensors, a firm shake throws the die — like rattling it
+// in a cup. We watch the accelerometer (`accelerationIncludingGravity` is present
+// on every device with an IMU: accelerometer + gyro) and fire on a large
+// sample-to-sample jump. The throw runs through the normal fair path
+// (`roll` → `autoThrow`), so a shake stays exactly as fair as pressing Roll.
+//
+// iOS 13+ hides the sensor behind a permission prompt that must be requested from
+// inside a user gesture, so `enableMotion` is wired to the first tap/grab/roll.
+interface MotionCtor {
+  new (type: string, eventInitDict?: DeviceMotionEventInit): DeviceMotionEvent;
+  requestPermission?: () => Promise<"granted" | "denied" | "default">;
+}
+const MotionEventCtor: MotionCtor | undefined = (
+  window as unknown as { DeviceMotionEvent?: MotionCtor }
+).DeviceMotionEvent;
+const needsMotionPermission =
+  !!MotionEventCtor && typeof MotionEventCtor.requestPermission === "function";
+
+const SHAKE_DELTA = 22; // m/s² jump between samples that counts as a shake — a
+//                         conservative headless guess; tune on a real device.
+const SHAKE_COOLDOWN = 900; // ms between shake-fired rolls (debounce)
+let lastAccel: { x: number; y: number; z: number } | null = null;
+let lastShakeAt = 0;
+let motionRequested = false;
+
+function onDeviceMotion(ev: DeviceMotionEvent): void {
+  const a = ev.accelerationIncludingGravity;
+  if (!a || a.x == null || a.y == null || a.z == null) return;
+  if (lastAccel) {
+    const dx = a.x - lastAccel.x;
+    const dy = a.y - lastAccel.y;
+    const dz = a.z - lastAccel.z;
+    const delta = Math.sqrt(dx * dx + dy * dy + dz * dz);
+    const now = performance.now();
+    if (delta > SHAKE_DELTA && now - lastShakeAt > SHAKE_COOLDOWN) {
+      lastShakeAt = now;
+      onShake();
+    }
+  }
+  lastAccel = { x: a.x, y: a.y, z: a.z };
+}
+
+function onShake(): void {
+  if (held) return; // don't yank the die out of a hand mid-drag
+  vibrate(VIBRATE_SHAKE);
+  roll();
+}
+
+// Subscribe to motion events. On iOS this must run inside a user gesture (it
+// pops a permission prompt); everywhere else we can subscribe straight away.
+function enableMotion(): void {
+  if (motionRequested || !MotionEventCtor) return;
+  motionRequested = true;
+  if (needsMotionPermission) {
+    MotionEventCtor.requestPermission!()
+      .then((state) => {
+        if (state === "granted") window.addEventListener("devicemotion", onDeviceMotion);
+      })
+      .catch(() => {
+        /* prompt dismissed — shake stays off, everything else still works */
+      });
+  } else {
+    window.addEventListener("devicemotion", onDeviceMotion);
+  }
+}
+
 // ----- wiring -----
 btn.addEventListener("click", roll);
 canvas.addEventListener("pointerdown", onPointerDown);
@@ -609,3 +696,6 @@ if (typeof ResizeObserver !== "undefined") {
 // init
 setDieLabel(current);
 resize();
+// Where the sensor needs no permission (Android/desktop), start listening now so
+// a shake works without a tap first. iOS waits for the first gesture instead.
+if (!needsMotionPermission) enableMotion();
