@@ -3,6 +3,7 @@
   "version": "1.0.0",
   "description": "Roll a single ten-sided die, beautifully.",
   "private": true,
+  "license": "AGPL-3.0-or-later",
   "type": "module",
   "scripts": {
     "dev": "bun ./src/index.html",
