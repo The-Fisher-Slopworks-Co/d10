@@ -2,14 +2,16 @@
 
 **Roll a single ten-sided die — beautifully.**
 
-A tiny, fast, dependency-free web toy: one d10, one button, and a real 3D throw.
-The die is an actual pentagonal trapezohedron rendered on a canvas — it's flung
-up, tumbles, and settles on the rolled number. Built with Bun and vanilla
-TypeScript (no 3D or physics library), bundled to static files, and deployed to
-GitHub Pages.
+A tiny, fast, dependency-free web toy: one d10 you can **grab and throw**. The
+die is an actual pentagonal trapezohedron simulated as a real rigid body on a
+canvas — fling it across the floor and it tumbles, bounces, and settles on
+whatever number lands face-up. Nothing is decided up front; the result is
+emergent and provably fair. Built with Bun and vanilla TypeScript (no 3D or
+physics library — the renderer *and* the physics are hand-written), bundled to
+static files, and deployed to GitHub Pages.
 
 <p align="center">
-  <img src="./assets/screenshot.png" alt="A faceted purple ten-sided die tumbling in mid-air mid-throw, numbered faces at an angle, above a Roll button" width="640" />
+  <img src="./assets/screenshot.png" alt="A faceted purple ten-sided die tumbling across a glowing grid floor mid-throw, numbered faces catching the light" width="640" />
 </p>
 
 > **Live:** `https://the-fisher-slopworks-co.github.io/d10/`
@@ -17,23 +19,28 @@ GitHub Pages.
 
 ## Features
 
-- **One d10, done well.** Click (or press <kbd>Space</kbd>/<kbd>Enter</kbd>) to roll a
-  uniform result from **1–10**.
-- **A real, 3D throw.** The die is an actual pentagonal trapezohedron rendered in 3D
-  on a canvas — it's flung up, tumbles on a random axis, arcs back down and bounces
-  before it settles. The result is chosen up front and the tumble is choreographed to
-  land on it, so the face you read is always the true roll — never a mismatch between
-  what spins and what stops.
-- **Accessible.** Respects `prefers-reduced-motion` with a calm fallback, is fully
-  keyboard-operable, and announces each result to screen readers.
+- **Grab it and throw it.** Drag the die and let go to fling it across the floor —
+  release velocity becomes the throw, the flick becomes the spin. Or press **Roll**
+  (or <kbd>Space</kbd>/<kbd>Enter</kbd>) for a fair machine throw.
+- **Real physics, not a fake.** The die is an actual pentagonal trapezohedron
+  simulated as a rigid body — its true inertia tensor, gravity, impulse-based
+  collisions against the floor and walls, friction, and a clean settle. The number
+  is **whatever face lands up**; nothing is chosen up front.
+- **Provably fair.** Because the throw starts from a uniform-random orientation and
+  tumbles hard on an isohedral solid, every digit **1–10** is equally likely — and a
+  seeded chi-square test over thousands of simulated throws keeps it that way.
+- **Accessible.** Respects `prefers-reduced-motion` with a calm fallback (a fair pick
+  snapped flat, no tumble), is fully keyboard-operable, and announces each result to
+  screen readers.
 - **Featherweight.** No framework, no runtime dependencies, no network calls. Works
   offline and loads instantly.
 
 ## Tech stack
 
 - [**Bun**](https://bun.com) — runtime, bundler, dev server, and test runner (no Webpack/Vite).
-- **Vanilla TypeScript** + a hand-written **canvas** 3D renderer (no three.js, no
-  physics engine) + hand-written **CSS**. That's it.
+- **Vanilla TypeScript** + a hand-written **canvas** 3D renderer **and** a
+  hand-written rigid-body physics engine (no three.js, no cannon/rapier) +
+  hand-written **CSS**. That's it.
 
 ## Local development
 
@@ -47,7 +54,7 @@ bun run dev        # dev server with hot reload → http://localhost:3000
 Other scripts:
 
 ```bash
-bun test           # headless correctness tests (the roll invariant + geometry)
+bun test           # headless tests: geometry, inertia, settling + fairness (~15s)
 bun run build      # bundle to ./dist (what gets published)
 bun run preview    # build + serve dist under a /d10/ sub-path, like GitHub Pages
                    # → http://localhost:4173/d10/

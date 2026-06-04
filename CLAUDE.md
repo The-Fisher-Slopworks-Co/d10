@@ -20,16 +20,31 @@ Use Bun for everything.
 ## Layout
 
 - `src/index.html` — the page shell; the bundler entry point. Holds the
-  `<canvas>` the die is drawn on (no inline SVG die anymore).
+  `<canvas>` the floor + die are drawn on (the canvas is itself the grabbable,
+  keyboard-operable die).
 - `src/die3d.ts` — **pure, DOM-free** geometry + 3D math: the pentagonal
-  trapezohedron's vertices/faces, vector/quaternion helpers, the per-face digit
-  map, and `restQuat` (the orientation that lands a chosen face square to the
-  camera). Imported by both `main.ts` and the test.
-- `src/main.ts` — the canvas renderer, the throw animation, and all DOM wiring.
+  trapezohedron's vertices/faces, vector/quaternion/3×3-matrix helpers, the
+  per-face digit map, the **real inertia tensor** (exact tetrahedron
+  decomposition — a symmetric top), and the top-face read/`settleQuat` helpers.
+  Imported by `physics.ts`, `main.ts`, and the test.
+- `src/physics.ts` — **pure, DOM-free** rigid-body simulator: a `Body` (position,
+  orientation, linear + angular velocity) stepped under gravity with
+  impulse-based collisions (floor + invisible walls), Coulomb friction, and a
+  sleep/settle snap. Also the throw makers (`autoThrow`, `releasedBody`) and the
+  headless `simulateToRest`. No result is decided up front — the number is
+  whatever the die settles on.
+- `src/rng.ts` — **pure, DOM-free** seedable RNG (`mulberry32`), a uniform
+  `randomQuat` (Shoemake) and `randomDir`. Production passes `Math.random`; the
+  test passes a fixed seed so the fairness check is reproducible.
+- `src/main.ts` — the canvas renderer, the single camera (used for both
+  projection and the drag pick), the animation loop that steps the sim, the
+  drag-to-throw interaction, and all DOM wiring.
 - `src/style.css` — all styles and `@keyframes` (linked from the HTML).
 - `src/favicon.svg` — the d10 favicon.
-- `test/roll.test.ts` — headless `bun test` asserting the roll invariant
-  (settled face == chosen result over many rolls) and the geometry.
+- `test/roll.test.ts` — headless `bun test` asserting the geometry, the inertia
+  tensor (symmetric top), settling (lands flat on one face in bounded time), and
+  the **fairness** of the emergent result (seeded chi-square over thousands of
+  throws). ~15s because each throw is a full simulation.
 - `build.ts` — production build (calls `Bun.build`).
 - `scripts/serve-dist.ts` — local sub-path preview server.
 - `.github/workflows/deploy.yml` — GitHub Pages deploy pipeline.
@@ -41,16 +56,20 @@ Use Bun for everything.
 - **Relative asset paths.** The build must emit `./`-relative URLs so the site
   works at `https://<user>.github.io/<repo>/`. This is why `build.ts` does **not**
   set `publicPath`. Verify with `bun run preview` after changing the build.
-- **Roll correctness.** A roll is a uniform integer in **1–10**. The die tumbles
-  freely through real 3D faces, but the result is chosen up front and the tumble
-  decays onto a precomputed rest orientation, so the value shown when the die
-  settles **must equal the actual random result**. `bun test` guards this.
-- **Accessibility.** Honor `prefers-reduced-motion` with a calm fallback (snap to
-  the result, no tumble); keep the roll control keyboard-operable; announce
-  results via `aria-live`.
+- **Roll correctness = fairness, emergent.** A roll is a real rigid-body throw;
+  the result is **whichever face lands up**, not chosen up front. Fairness (a
+  uniform integer **1–10**) comes from the throw: a uniform-random initial
+  orientation (`randomQuat`) plus a vigorous tumble, on an isohedral solid. The
+  number is read off the **top** face once the die sleeps. `bun test` guards this
+  with a seeded chi-square — keep the test deterministic (inject the RNG; never
+  call `Math.random` inside the sim or the throw generator).
+- **Accessibility.** Honor `prefers-reduced-motion` with a calm fallback (pick a
+  fair result and snap the die flat, no tumble); keep the roll control
+  keyboard-operable; announce results via `aria-live`.
 - **Stay dependency-light.** Don't reintroduce React, Tailwind, a UI kit, a 3D
-  engine (three.js), a physics library, or any runtime dependency. The 3D die is
-  a hand-written canvas renderer; keep it that way.
+  engine (three.js), a physics library (cannon/rapier/etc.), or any runtime
+  dependency. Both the renderer **and** the physics are hand-written; keep them
+  that way.
 
 ## Bun notes
 

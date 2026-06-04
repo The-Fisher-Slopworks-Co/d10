@@ -6,9 +6,10 @@
 //
 // The solid is a real pentagonal trapezohedron: two apexes on the polar (y)
 // axis and a ten-vertex zig-zag "equator" in the x–z plane, giving ten
-// congruent kite faces. Picking the result up front and rotating the chosen
-// face to the camera (see `restQuat`) is what keeps the rendered die honest:
-// the face you read at rest is, by construction, the random result.
+// congruent kite faces. The die is thrown as a real rigid body (see
+// physics.ts); the result is whichever face settles on top — read with
+// `faceUp`/`settleQuat`, never chosen up front. This module also computes the
+// solid's real inertia tensor, so that tumble is physically honest.
 
 // ----- small fixed-width vector / quaternion types -----
 // Fixed-length tuples (not number[]) so `v[0]` is `number`, not
@@ -45,13 +46,6 @@ export function normalize(a: Vec3): Vec3 {
 }
 
 // ----- quaternions (Hamilton product, active rotation) -----
-export function quatFromAxisAngle(axis: Vec3, angle: number): Quat {
-  const a = normalize(axis);
-  const h = angle / 2;
-  const s = Math.sin(h);
-  return [a[0] * s, a[1] * s, a[2] * s, Math.cos(h)];
-}
-
 // (a ⊗ b) applies b first, then a — matches quatRotate(a⊗b, v) = a(b(v)).
 export function quatMul(a: Quat, b: Quat): Quat {
   const [ax, ay, az, aw] = a;
@@ -76,39 +70,83 @@ export function quatRotate(q: Quat, v: Vec3): Vec3 {
   return add(add(v, scale(t, q[3])), cross(u, t));
 }
 
-// Quaternion from a 3×3 rotation matrix (Shepperd's method).
-export function quatFromMat3(m: Mat3): Quat {
-  const m00 = m[0][0], m01 = m[0][1], m02 = m[0][2];
-  const m10 = m[1][0], m11 = m[1][1], m12 = m[1][2];
-  const m20 = m[2][0], m21 = m[2][1], m22 = m[2][2];
-  const trace = m00 + m11 + m22;
-  let x: number, y: number, z: number, w: number;
-  if (trace > 0) {
-    const s = Math.sqrt(trace + 1) * 2; // 4w
-    w = 0.25 * s;
-    x = (m21 - m12) / s;
-    y = (m02 - m20) / s;
-    z = (m10 - m01) / s;
-  } else if (m00 > m11 && m00 > m22) {
-    const s = Math.sqrt(1 + m00 - m11 - m22) * 2; // 4x
-    w = (m21 - m12) / s;
-    x = 0.25 * s;
-    y = (m01 + m10) / s;
-    z = (m02 + m20) / s;
-  } else if (m11 > m22) {
-    const s = Math.sqrt(1 + m11 - m00 - m22) * 2; // 4y
-    w = (m02 - m20) / s;
-    x = (m01 + m10) / s;
-    y = 0.25 * s;
-    z = (m12 + m21) / s;
-  } else {
-    const s = Math.sqrt(1 + m22 - m00 - m11) * 2; // 4z
-    w = (m10 - m01) / s;
-    x = (m02 + m20) / s;
-    y = (m12 + m21) / s;
-    z = 0.25 * s;
+// Rotation matrix (body → world) for a unit quaternion. R·v == quatRotate(q, v).
+export function quatToMat3(q: Quat): Mat3 {
+  const [x, y, z, w] = q;
+  const xx = x * x, yy = y * y, zz = z * z;
+  const xy = x * y, xz = x * z, yz = y * z;
+  const wx = w * x, wy = w * y, wz = w * z;
+  return [
+    [1 - 2 * (yy + zz), 2 * (xy - wz), 2 * (xz + wy)],
+    [2 * (xy + wz), 1 - 2 * (xx + zz), 2 * (yz - wx)],
+    [2 * (xz - wy), 2 * (yz + wx), 1 - 2 * (xx + yy)],
+  ];
+}
+
+// ----- small 3×3 matrix helpers (used by the inertia tensor + rigid body) -----
+export function mat3MulVec(m: Mat3, v: Vec3): Vec3 {
+  return [dot(m[0], v), dot(m[1], v), dot(m[2], v)];
+}
+export function mat3Mul(a: Mat3, b: Mat3): Mat3 {
+  const out: number[][] = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  for (let i = 0; i < 3; i++)
+    for (let j = 0; j < 3; j++)
+      out[i]![j] = a[i]![0]! * b[0]![j]! + a[i]![1]! * b[1]![j]! + a[i]![2]! * b[2]![j]!;
+  return [
+    [out[0]![0]!, out[0]![1]!, out[0]![2]!],
+    [out[1]![0]!, out[1]![1]!, out[1]![2]!],
+    [out[2]![0]!, out[2]![1]!, out[2]![2]!],
+  ];
+}
+export function mat3Transpose(m: Mat3): Mat3 {
+  return [
+    [m[0][0], m[1][0], m[2][0]],
+    [m[0][1], m[1][1], m[2][1]],
+    [m[0][2], m[1][2], m[2][2]],
+  ];
+}
+export function mat3Scale(m: Mat3, s: number): Mat3 {
+  return [
+    [m[0][0] * s, m[0][1] * s, m[0][2] * s],
+    [m[1][0] * s, m[1][1] * s, m[1][2] * s],
+    [m[2][0] * s, m[2][1] * s, m[2][2] * s],
+  ];
+}
+export function mat3Add(a: Mat3, b: Mat3): Mat3 {
+  return [
+    [a[0][0] + b[0][0], a[0][1] + b[0][1], a[0][2] + b[0][2]],
+    [a[1][0] + b[1][0], a[1][1] + b[1][1], a[1][2] + b[1][2]],
+    [a[2][0] + b[2][0], a[2][1] + b[2][1], a[2][2] + b[2][2]],
+  ];
+}
+export function mat3Inverse(m: Mat3): Mat3 {
+  const a = m[0][0], b = m[0][1], c = m[0][2];
+  const d = m[1][0], e = m[1][1], f = m[1][2];
+  const g = m[2][0], h = m[2][1], i = m[2][2];
+  const A = e * i - f * h, B = -(d * i - f * g), C = d * h - e * g;
+  const det = a * A + b * B + c * C;
+  if (Math.abs(det) < 1e-18) throw new Error("singular matrix");
+  const inv = 1 / det;
+  return [
+    [A * inv, (c * h - b * i) * inv, (b * f - c * e) * inv],
+    [B * inv, (a * i - c * g) * inv, (c * d - a * f) * inv],
+    [C * inv, (b * g - a * h) * inv, (a * e - b * d) * inv],
+  ];
+}
+
+// Shortest-arc quaternion rotating unit vector `a` onto unit vector `b`.
+export function quatFromTo(a: Vec3, b: Vec3): Quat {
+  const d = dot(a, b);
+  if (d > 0.999999) return [0, 0, 0, 1];
+  if (d < -0.999999) {
+    // Antiparallel: 180° about any axis perpendicular to a.
+    let axis = cross([1, 0, 0], a);
+    if (length(axis) < 1e-6) axis = cross([0, 1, 0], a);
+    axis = normalize(axis);
+    return [axis[0], axis[1], axis[2], 0];
   }
-  return quatNormalize([x, y, z, w]);
+  const axis = cross(a, b);
+  return quatNormalize([axis[0], axis[1], axis[2], 1 + d]);
 }
 
 // ----- the solid -----
@@ -176,9 +214,9 @@ function buildFrames(): FaceFrame[] {
     // Normal from the kite's diagonals; flip to point away from the origin.
     let normal = normalize(cross(sub(p2, p0), sub(p3, p1)));
     if (dot(normal, centroid) < 0) normal = scale(normal, -1);
-    // "Up" points from the face toward its apex (vertex 0), projected into
-    // the face plane. The digit is drawn with its top toward this vector, so
-    // forcing it to screen-up (in restQuat) lands the read digit upright.
+    // "Up" points from the face toward its apex (vertex 0), projected into the
+    // face plane. The renderer draws each digit with its top toward this vector
+    // (see drawDie in main.ts), so the printed number reads upright on a face.
     const toApex = sub(p0, centroid);
     const up = normalize(sub(toApex, scale(normal, dot(toApex, normal))));
     return { centroid, normal, up };
@@ -211,67 +249,97 @@ export function faceForDigit(digit: number): number {
   return f;
 }
 
-// How far the resting die tilts its read-face toward the light/up, in radians.
-// 0 = face dead-on; positive = we look slightly down onto it (more 3D).
-export const VIEW_TILT = 0.21;
+// ----- mass properties (the real inertia tensor) -----
+// The solid is centrally symmetric, so its centre of mass is the origin and the
+// model vertices already sit relative to it. We integrate the inertia tensor
+// *exactly* by decomposing the solid into tetrahedra (origin → each surface
+// triangle) and summing each one's contribution via the canonical-tetrahedron
+// covariance. With a 5-fold symmetry axis (y) the result is a symmetric top:
+// I_xx == I_zz != I_yy with zero off-diagonals (the test asserts this).
+export const MASS = 1;
 
-// The orientation that brings face `f` to rest facing the camera, upright.
-// Builds the rotation mapping the face's own frame (right, up, normal) onto a
-// fixed view frame, then converts to a quaternion. Both the face normal → view
-// direction AND the digit's up → screen-up are pinned, so the digit can't
-// settle rotated or upside-down.
-export function restQuat(face: number, tilt: number = VIEW_TILT): Quat {
-  const frame = FACE_FRAMES[face];
-  if (!frame) throw new Error("bad face index " + face);
-  const n = frame.normal;
-  // Orthonormal model frame (e1 right, e2 up, e3 normal), right-handed.
-  const e1 = normalize(cross(frame.up, n));
-  const e2 = cross(n, e1);
-  const e3 = n;
-  // Target view frame: normal toward camera tilted up by `tilt`, up ≈ +Y.
-  const c = Math.cos(tilt);
-  const s = Math.sin(tilt);
-  const t1: Vec3 = [1, 0, 0];
-  const t2: Vec3 = [0, c, -s];
-  const t3: Vec3 = [0, s, c];
-  // R = Σ t_k ⊗ e_k maps e_k → t_k.
-  const R: Mat3 = [
-    [
-      t1[0] * e1[0] + t2[0] * e2[0] + t3[0] * e3[0],
-      t1[0] * e1[1] + t2[0] * e2[1] + t3[0] * e3[1],
-      t1[0] * e1[2] + t2[0] * e2[2] + t3[0] * e3[2],
-    ],
-    [
-      t1[1] * e1[0] + t2[1] * e2[0] + t3[1] * e3[0],
-      t1[1] * e1[1] + t2[1] * e2[1] + t3[1] * e3[1],
-      t1[1] * e1[2] + t2[1] * e2[2] + t3[1] * e3[2],
-    ],
-    [
-      t1[2] * e1[0] + t2[2] * e2[0] + t3[2] * e3[0],
-      t1[2] * e1[1] + t2[2] * e2[1] + t3[2] * e3[1],
-      t1[2] * e1[2] + t2[2] * e2[2] + t3[2] * e3[2],
-    ],
+// ∫ ξξᵀ dV over the canonical tetra (0, e1, e2, e3) = (1/120)·[[2,1,1],[1,2,1],[1,1,2]].
+const TETRA_COV: Mat3 = [
+  [2 / 120, 1 / 120, 1 / 120],
+  [1 / 120, 2 / 120, 1 / 120],
+  [1 / 120, 1 / 120, 2 / 120],
+];
+
+function computeMassProps(): { volume: number; inertia: Mat3; invInertia: Mat3 } {
+  let volume = 0;
+  let cov: Mat3 = [[0, 0, 0], [0, 0, 0], [0, 0, 0]];
+  // Each kite face splits into two outward-wound triangles.
+  for (const f of FACES) {
+    for (const [i, j, k] of [[f[0], f[1], f[2]], [f[0], f[2], f[3]]] as const) {
+      const a = vertexOf(i), b = vertexOf(j), c = vertexOf(k);
+      // The origin lies inside the solid and these origin→face tetrahedra tile it
+      // with no overlap, so each contributes its (unsigned) volume regardless of
+      // how the face happens to be wound. |det M| = 6·(tetra volume).
+      const vol6 = Math.abs(dot(a, cross(b, c)));
+      volume += vol6 / 6;
+      const M: Mat3 = [
+        [a[0], b[0], c[0]],
+        [a[1], b[1], c[1]],
+        [a[2], b[2], c[2]],
+      ];
+      // ∫ x xᵀ dV over this tetra = |det M| · M · TETRA_COV · Mᵀ. (TETRA_COV is
+      // permutation-symmetric, so vertex order within the triangle is irrelevant.)
+      cov = mat3Add(cov, mat3Scale(mat3Mul(mat3Mul(M, TETRA_COV), mat3Transpose(M)), vol6));
+    }
+  }
+  const density = MASS / volume;
+  cov = mat3Scale(cov, density); // C = ∫ ρ x xᵀ dV
+  const tr = cov[0][0] + cov[1][1] + cov[2][2];
+  // Inertia tensor I = trace(C)·Id − C.
+  const inertia: Mat3 = [
+    [tr - cov[0][0], -cov[0][1], -cov[0][2]],
+    [-cov[1][0], tr - cov[1][1], -cov[1][2]],
+    [-cov[2][0], -cov[2][1], tr - cov[2][2]],
   ];
-  return quatFromMat3(R);
+  return { volume, inertia, invInertia: mat3Inverse(inertia) };
 }
 
-// The camera/read direction. Derived from VIEW_TILT (not a separate literal) so
-// it can never drift out of sync with the rest orientation restQuat() targets.
-export const VIEW_DIR: Vec3 = [0, Math.sin(VIEW_TILT), Math.cos(VIEW_TILT)];
+const MASS_PROPS = computeMassProps();
+export const VOLUME = MASS_PROPS.volume;
+export const INERTIA: Mat3 = MASS_PROPS.inertia;
+export const INV_INERTIA_BODY: Mat3 = MASS_PROPS.invInertia;
 
-// Which face currently reads as "up to the camera": the one whose rotated
-// normal is most aligned with VIEW_DIR. Used by the test to confirm the
-// rendered result matches the chosen face (the renderer reads the same way).
+// World up — the floor's normal. A settled die is read off its top face.
+export const WORLD_UP: Vec3 = [0, 1, 0];
 
-export function frontFace(orientation: Quat): number {
-  let best = -1;
-  let bestDot = -Infinity;
+// Which face currently points most upward (its world normal closest to +Y).
+// A trapezohedron resting flat on its bottom face puts the antipodal face flat
+// on top; that top face is what you read on a real d10.
+export function faceUp(orientation: Quat): number {
+  let best = 0;
+  let bestY = -Infinity;
   FACE_FRAMES.forEach((frame, i) => {
-    const d = dot(quatRotate(orientation, frame.normal), VIEW_DIR);
-    if (d > bestDot) {
-      bestDot = d;
+    const ny = quatRotate(orientation, frame.normal)[1];
+    if (ny > bestY) {
+      bestY = ny;
       best = i;
     }
   });
   return best;
+}
+
+// The digit read off a given orientation (its top face's printed value, 1..10).
+export function readDigit(orientation: Quat): number {
+  return FACE_DIGITS[faceUp(orientation)]!;
+}
+
+// Minimal-tilt correction: nudge the current orientation so its top face's
+// normal is *exactly* +Y. Doubles as the settle snap — it removes residual
+// jitter and makes the top-face read unambiguous without spinning the die.
+export function settleQuat(orientation: Quat): { quat: Quat; face: number } {
+  const face = faceUp(orientation);
+  const n = quatRotate(orientation, FACE_FRAMES[face]!.normal);
+  const corr = quatFromTo(n, WORLD_UP);
+  return { quat: quatNormalize(quatMul(corr, orientation)), face };
+}
+
+// An orientation that lays a chosen face flat on top (used by the reduced-motion
+// path, which picks a face directly instead of simulating a throw).
+export function faceUpQuat(face: number): Quat {
+  return quatFromTo(FACE_FRAMES[face]!.normal, WORLD_UP);
 }

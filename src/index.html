@@ -14,22 +14,21 @@
     <h1 class="title"><b>d</b>10</h1>
 
     <div class="stage" id="stage">
-      <div class="shadow" id="shadow" aria-hidden="true"></div>
-
-      <div
-        class="die-wrap"
-        id="die"
+      <!-- A real pentagonal trapezohedron simulated and drawn in 3D each frame
+           on this canvas (geometry + math in die3d.ts, the rigid-body sim in
+           physics.ts, drawing + drag in main.ts). The canvas itself is the
+           grabbable die and is keyboard-operable. -->
+      <canvas
+        id="dieCanvas"
         tabindex="0"
         role="button"
-        aria-label="Ten-sided die, currently showing 10. Activate to roll."
-      >
-        <!-- A real pentagonal trapezohedron rendered in 3D each frame on this
-             canvas (geometry + math in die3d.ts, drawing in main.ts). -->
-        <canvas id="dieCanvas" aria-hidden="true"></canvas>
-      </div>
+        aria-label="Ten-sided die, showing 10. Drag it to throw, or press Enter to roll."
+      ></canvas>
 
       <div class="sparks" id="sparks" aria-hidden="true"></div>
     </div>
+
+    <p class="hint" aria-hidden="true">Grab the die and fling it — or press Roll.</p>
 
     <button class="roll-btn" id="rollBtn" type="button">Roll</button>
 

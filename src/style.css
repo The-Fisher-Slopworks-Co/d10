@@ -6,7 +6,8 @@
   --accent-deep: #5a2db0;
   --ink: #f3eefb;
   --muted: #9b8fb5;
-  --die-size: clamp(170px, 44vmin, 340px);
+  --stage-w: min(96vw, 1040px);
+  --stage-h: min(64vh, 680px);
 }
 
 * {
@@ -30,8 +31,8 @@ body {
   flex-direction: column;
   align-items: center;
   justify-content: center;
-  gap: clamp(28px, 6vmin, 56px);
-  padding: max(24px, env(safe-area-inset-top)) 20px max(28px, env(safe-area-inset-bottom));
+  gap: clamp(14px, 3vmin, 30px);
+  padding: max(18px, env(safe-area-inset-top)) 16px max(22px, env(safe-area-inset-bottom));
   overflow: hidden;
   -webkit-tap-highlight-color: transparent;
 }
@@ -84,96 +85,40 @@ body::after {
   font-weight: 700;
 }
 
-/* ----- stage ----- */
+/* ----- stage (the floor + die are drawn on the canvas) ----- */
 .stage {
   position: relative;
   z-index: 1;
-  width: var(--die-size);
-  height: calc(var(--die-size) * 1.34);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  perspective: 1100px;
-  perspective-origin: 50% 38%;
+  width: var(--stage-w);
+  height: var(--stage-h);
+  max-width: 100%;
 }
 
-/* contact shadow on the "floor" */
-.shadow {
-  position: absolute;
-  left: 50%;
-  bottom: 2%;
-  width: 74%;
-  height: 13%;
-  transform: translateX(-50%) scale(1);
-  background: radial-gradient(
-    50% 50% at 50% 50%,
-    rgba(0, 0, 0, 0.62) 0%,
-    rgba(0, 0, 0, 0.34) 42%,
-    transparent 72%
-  );
-  filter: blur(7px);
-  border-radius: 50%;
-  z-index: 0;
-}
-
-.die-wrap {
-  position: relative;
-  width: 100%;
-  height: 100%;
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  transform-style: preserve-3d;
-  will-change: transform;
-  z-index: 1;
-  cursor: pointer;
-  outline: none;
-}
-.die-wrap canvas {
-  width: 100%;
-  height: 100%;
+.stage canvas {
   display: block;
-  /* drop-shadow is applied (and combined with motion blur) from main.ts so the
-     soft cast moves with the die as it leaps. */
+  width: 100%;
+  height: 100%;
+  cursor: grab;
+  touch-action: none; /* let pointer drags drive the throw instead of scrolling */
+  border-radius: 16px;
+  outline: none;
+  /* a soft cast under the whole scene */
+  filter: drop-shadow(0 18px 26px rgba(0, 0, 0, 0.45));
+}
+.stage canvas:active {
+  cursor: grabbing;
 }
 
-/* Promote the moving layers to their own compositing layer only while a roll
-   is in flight; at rest there's nothing to prepare for, so we don't keep GPU
-   memory pinned. */
-.stage.spinning .shadow,
-.stage.spinning .die-wrap canvas {
-  will-change: transform, opacity, filter;
+/* Promote the canvas to its own layer only while a throw is in flight. */
+.stage.spinning canvas {
+  will-change: transform;
 }
 
-/* ambient glow halo behind die */
-.die-wrap::before {
-  content: "";
-  position: absolute;
-  left: 50%;
-  top: 46%;
-  width: 84%;
-  height: 84%;
-  transform: translate(-50%, -50%);
-  background: radial-gradient(
-    50% 50% at 50% 50%,
-    rgba(169, 116, 255, 0.34),
-    rgba(108, 246, 224, 0.1) 45%,
-    transparent 70%
-  );
-  filter: blur(20px);
-  z-index: -1;
-  opacity: 0.85;
-  transition: opacity 0.35s ease;
-}
-.stage.spinning .die-wrap::before {
-  opacity: 1;
-}
-
-/* particle burst container */
+/* particle burst container — positioned in JS to the settled die */
 .sparks {
   position: absolute;
   left: 50%;
-  top: 42%;
+  top: 50%;
   width: 0;
   height: 0;
   z-index: 3;
@@ -232,12 +177,21 @@ body::after {
   transform: translateY(1px) scale(0.985);
 }
 .roll-btn:focus-visible,
-.die-wrap:focus-visible {
+.stage canvas:focus-visible {
   outline: 2px solid var(--accent-2);
   outline-offset: 4px;
 }
-.die-wrap:focus-visible {
-  border-radius: 12px;
+
+/* ----- drag hint ----- */
+.hint {
+  position: relative;
+  z-index: 2;
+  margin: 0;
+  font-size: clamp(12px, 2.2vmin, 14px);
+  letter-spacing: 0.04em;
+  color: var(--muted);
+  user-select: none;
+  text-align: center;
 }
 
 .sr-only {
