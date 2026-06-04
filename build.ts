@@ -27,6 +27,13 @@ if (!result.success) {
   process.exit(1);
 }
 
+// GitHub Pages serves the custom domain only if a `CNAME` file sits at the
+// root of the published site. `dist/` is gitignored and rebuilt from scratch
+// every time, so we can't commit one — we emit it here so it always ends up in
+// the Pages artifact (the deploy workflow uploads `dist/` wholesale).
+const CUSTOM_DOMAIN = "d10.slopworks.org";
+await Bun.write(path.join(outdir, "CNAME"), `${CUSTOM_DOMAIN}\n`);
+
 console.log("✅ Built to dist/");
 for (const output of result.outputs) {
   console.log(`   ${path.relative(process.cwd(), output.path)}  ${(output.size / 1024).toFixed(1)} KB`);
