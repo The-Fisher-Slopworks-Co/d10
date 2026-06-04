@@ -45,8 +45,15 @@ Use Bun for everything.
   tensor (symmetric top), settling (lands flat on one face in bounded time), and
   the **fairness** of the emergent result (seeded chi-square over thousands of
   throws). ~15s because each throw is a full simulation.
-- `build.ts` — production build (calls `Bun.build`).
+- `test/minify-html.test.ts` — headless `bun test` for the HTML minify stage:
+  comments go, whitespace collapses, and everything significant (doctype, text,
+  attribute values, raw-text bodies, inter-inline spaces) survives.
+- `build.ts` — production build. Calls `Bun.build` (which minifies the bundled
+  JS + CSS), then runs the HTML minify stage over every emitted `.html`.
 - `scripts/serve-dist.ts` — local sub-path preview server.
+- `scripts/minify-html.ts` — **pure, dependency-free** HTML minifier used by the
+  build. Bun's `minify` leaves the HTML shell verbatim; this strips comments and
+  collapses insignificant whitespace without changing how the page renders.
 - `.github/workflows/deploy.yml` — GitHub Pages deploy pipeline.
 
 ## Conventions & invariants (don't break these)
