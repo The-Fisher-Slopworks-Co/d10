@@ -11,6 +11,8 @@
     "preview": "bun run build && bun ./scripts/serve-dist.ts"
   },
   "devDependencies": {
-    "@types/bun": "latest"
+    "@types/bun": "latest",
+    "@types/html-minifier-terser": "^7.0.2",
+    "html-minifier-terser": "^7.2.0"
   }
 }

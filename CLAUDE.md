@@ -51,9 +51,10 @@ Use Bun for everything.
 - `build.ts` — production build. Calls `Bun.build` (which minifies the bundled
   JS + CSS), then runs the HTML minify stage over every emitted `.html`.
 - `scripts/serve-dist.ts` — local sub-path preview server.
-- `scripts/minify-html.ts` — **pure, dependency-free** HTML minifier used by the
-  build. Bun's `minify` leaves the HTML shell verbatim; this strips comments and
-  collapses insignificant whitespace without changing how the page renders.
+- `scripts/minify-html.ts` — the build's HTML minify stage. Bun's `minify` leaves
+  the HTML shell verbatim; this wraps `html-minifier-terser` (a **build-time-only**
+  devDependency — it never ships in the bundle) with a conservative, render-safe
+  config that strips comments and collapses insignificant whitespace.
 - `.github/workflows/deploy.yml` — GitHub Pages deploy pipeline.
 
 ## Conventions & invariants (don't break these)

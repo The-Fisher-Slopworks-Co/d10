@@ -30,13 +30,13 @@ if (!result.success) {
 
 // Minify stage. Bun minifies the bundled JS & CSS, but emits each HTML document
 // verbatim (comments + indentation intact). Minify them here so the whole
-// artifact is lean — see scripts/minify-html.ts for why this is hand-rolled.
+// artifact is lean — see scripts/minify-html.ts for the render-safe config.
 const encoder = new TextEncoder();
 const htmlSavings: string[] = [];
 for (const output of result.outputs) {
   if (path.extname(output.path) !== ".html") continue;
   const before = await Bun.file(output.path).text();
-  const after = minifyHtml(before);
+  const after = await minifyHtml(before);
   await Bun.write(output.path, after);
   const kb = (bytes: number) => (bytes / 1024).toFixed(1);
   htmlSavings.push(
