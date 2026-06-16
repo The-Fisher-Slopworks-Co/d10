@@ -194,6 +194,188 @@ body::after {
   text-align: center;
 }
 
+/* ----- haptics / shake-to-roll nudge ----- */
+/* A subtle pill above Roll, shown only where it helps (see main.ts gating).
+   Borrows the Roll button's glassmorphism, one step quieter. */
+.haptics-cta {
+  position: relative;
+  z-index: 2;
+  display: flex;
+  align-items: center;
+  gap: 6px;
+  animation: cta-in 0.35s ease both;
+}
+.haptics-cta[hidden] {
+  display: none;
+}
+.haptics-cta__enable,
+.haptics-cta__dismiss {
+  font: inherit;
+  color: var(--ink);
+  border: 1px solid rgba(169, 116, 255, 0.45);
+  background: rgba(20, 14, 32, 0.6);
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease,
+    color 0.25s ease;
+  user-select: none;
+}
+.haptics-cta__enable {
+  font-size: clamp(12px, 2.2vmin, 14px);
+  letter-spacing: 0.04em;
+  padding: 8px 16px;
+  border-radius: 999px;
+}
+.haptics-cta__enable::before {
+  content: "✦";
+  margin-right: 7px;
+  color: var(--accent-2);
+}
+.haptics-cta__dismiss {
+  display: grid;
+  place-items: center;
+  width: 30px;
+  height: 30px;
+  padding: 0;
+  font-size: 18px;
+  line-height: 1;
+  color: var(--muted);
+  border-radius: 999px;
+}
+.haptics-cta__enable:hover {
+  border-color: rgba(169, 116, 255, 0.9);
+  background: rgba(28, 20, 44, 0.7);
+}
+.haptics-cta__dismiss:hover {
+  color: var(--ink);
+  border-color: rgba(169, 116, 255, 0.9);
+}
+.haptics-cta__enable:focus-visible,
+.haptics-cta__dismiss:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 3px;
+}
+
+@keyframes cta-in {
+  from {
+    opacity: 0;
+    transform: translateY(8px);
+  }
+  to {
+    opacity: 1;
+    transform: translateY(0);
+  }
+}
+
+/* ----- help (?) button + info dialog ----- */
+.help-btn {
+  position: fixed;
+  top: max(12px, env(safe-area-inset-top));
+  right: max(12px, env(safe-area-inset-right));
+  z-index: 5;
+  display: grid;
+  place-items: center;
+  width: 38px;
+  height: 38px;
+  font: inherit;
+  font-size: 19px;
+  font-weight: 600;
+  color: var(--ink);
+  border: 1px solid rgba(169, 116, 255, 0.45);
+  background: rgba(20, 14, 32, 0.6);
+  border-radius: 999px;
+  cursor: pointer;
+  backdrop-filter: blur(6px);
+  transition:
+    transform 0.18s cubic-bezier(0.34, 1.56, 0.64, 1),
+    border-color 0.25s ease,
+    background 0.25s ease;
+  user-select: none;
+}
+.help-btn:hover {
+  border-color: rgba(169, 116, 255, 0.9);
+  background: rgba(28, 20, 44, 0.7);
+  transform: translateY(-1px);
+}
+.help-btn:active {
+  transform: translateY(1px) scale(0.97);
+}
+.help-btn:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 3px;
+}
+
+.help-dialog {
+  margin: auto; /* top-layer centering */
+  max-width: min(92vw, 420px);
+  padding: clamp(20px, 4.5vmin, 30px);
+  color: var(--ink);
+  border: 1px solid rgba(169, 116, 255, 0.55);
+  border-radius: 16px;
+  background:
+    linear-gradient(180deg, rgba(169, 116, 255, 0.1), rgba(90, 45, 176, 0.06)),
+    rgba(20, 14, 32, 0.94);
+  box-shadow:
+    0 20px 60px -16px rgba(120, 60, 220, 0.6),
+    inset 0 1px 0 rgba(255, 255, 255, 0.1);
+  animation: cta-in 0.3s ease both;
+}
+.help-dialog::backdrop {
+  background: rgba(6, 4, 12, 0.62);
+  backdrop-filter: blur(3px);
+}
+.help-dialog__title {
+  margin: 0 0 14px;
+  font-size: clamp(17px, 3.4vmin, 20px);
+  letter-spacing: 0.01em;
+}
+.help-dialog__body {
+  margin: 0 0 18px;
+  color: var(--muted);
+  font-size: clamp(13px, 2.4vmin, 15px);
+  line-height: 1.55;
+}
+.help-dialog__body p {
+  margin: 0 0 12px;
+}
+.help-dialog__body p:last-child {
+  margin-bottom: 0;
+}
+.help-dialog__body b {
+  color: var(--ink);
+}
+.help-dialog form {
+  margin: 0;
+}
+.help-dialog__close {
+  font: inherit;
+  font-weight: 600;
+  letter-spacing: 0.16em;
+  text-transform: uppercase;
+  font-size: clamp(12px, 2.2vmin, 14px);
+  color: var(--ink);
+  padding: 10px 26px;
+  border-radius: 999px;
+  border: 1px solid rgba(169, 116, 255, 0.55);
+  background:
+    linear-gradient(180deg, rgba(169, 116, 255, 0.22), rgba(90, 45, 176, 0.16)),
+    rgba(20, 14, 32, 0.7);
+  cursor: pointer;
+  transition:
+    border-color 0.25s ease,
+    background 0.25s ease;
+  user-select: none;
+}
+.help-dialog__close:hover {
+  border-color: rgba(169, 116, 255, 0.9);
+}
+.help-dialog__close:focus-visible {
+  outline: 2px solid var(--accent-2);
+  outline-offset: 3px;
+}
+
 .sr-only {
   position: absolute;
   width: 1px;
@@ -215,5 +397,14 @@ body::after {
   body::before {
     animation: none;
     opacity: 0.85;
+  }
+  .haptics-cta,
+  .help-dialog {
+    animation: none;
+  }
+  .help-btn {
+    transition:
+      border-color 0.25s ease,
+      background 0.25s ease;
   }
 }

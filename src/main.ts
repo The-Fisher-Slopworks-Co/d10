@@ -39,6 +39,11 @@ const canvas = document.getElementById("dieCanvas") as HTMLCanvasElement;
 const btn = document.getElementById("rollBtn") as HTMLButtonElement;
 const sparks = document.getElementById("sparks") as HTMLElement;
 const live = document.getElementById("live") as HTMLElement;
+const hapticsCta = document.getElementById("hapticsCta") as HTMLElement;
+const hapticsEnable = document.getElementById("hapticsEnable") as HTMLButtonElement;
+const hapticsDismiss = document.getElementById("hapticsDismiss") as HTMLButtonElement;
+const helpBtn = document.getElementById("helpBtn") as HTMLButtonElement;
+const helpDialog = document.getElementById("helpDialog") as HTMLDialogElement;
 const ctx = canvas.getContext("2d") as CanvasRenderingContext2D;
 const reduceQuery = window.matchMedia("(prefers-reduced-motion: reduce)");
 
@@ -659,6 +664,7 @@ function onShake(): void {
 // Subscribe to motion events. On iOS this must run inside a user gesture (it
 // pops a permission prompt); everywhere else we can subscribe straight away.
 function enableMotion(): void {
+  hideHapticsCta(); // any gesture that reaches here makes the nudge redundant
   if (motionRequested || !MotionEventCtor) return;
   motionRequested = true;
   if (needsMotionPermission) {
@@ -674,6 +680,44 @@ function enableMotion(): void {
   }
 }
 
+// ----- haptics / shake-to-roll nudge -----
+// A capability-gated pill that invites the first gesture. It earns its place
+// only where that gesture unlocks something: iOS (shake needs requestPermission)
+// or a touch device that can vibrate (Android primes the Vibration API). On
+// desktop and unsupported browsers it never appears. No persistence by design —
+// it returns on the next fresh load.
+const coarsePointer = window.matchMedia("(any-pointer: coarse)").matches;
+const hapticsRelevant = needsMotionPermission || (canVibrate && coarsePointer);
+
+function hideHapticsCta(): void {
+  // If a keyboard user just activated Enable/Dismiss, the focused button is about
+  // to vanish — hand focus to Roll so they aren't stranded. Pointer use leaves
+  // focus where the tap put it.
+  const hadFocus =
+    document.activeElement === hapticsEnable || document.activeElement === hapticsDismiss;
+  hapticsCta.hidden = true;
+  if (hadFocus) btn.focus({ preventScroll: true });
+}
+
+// Tap = the user gesture. Light up motion (iOS permission prompt / listener) and
+// a confirming buzz that also unlocks Android's Vibration API, then step aside.
+function enableHaptics(): void {
+  enableMotion(); // also calls hideHapticsCta()
+  vibrate(VIBRATE_LAND);
+}
+
+function showHapticsCtaIfRelevant(): void {
+  if (!hapticsRelevant) return;
+  // Promise only what the device can do (iOS has no Vibration API).
+  hapticsEnable.textContent =
+    needsMotionPermission && canVibrate
+      ? "Enable haptics & shake-to-roll"
+      : needsMotionPermission
+        ? "Enable shake-to-roll"
+        : "Enable haptics";
+  hapticsCta.hidden = false;
+}
+
 // ----- wiring -----
 btn.addEventListener("click", roll);
 canvas.addEventListener("pointerdown", onPointerDown);
@@ -685,6 +729,18 @@ canvas.addEventListener("keydown", (ev: KeyboardEvent) => {
     ev.preventDefault();
     roll();
   }
+});
+hapticsEnable.addEventListener("click", enableHaptics);
+hapticsDismiss.addEventListener("click", hideHapticsCta);
+
+// Help: the "?" opens a modal info dialog (native focus-trap + Esc-to-close);
+// the "Got it" button closes it via form method="dialog". Add backdrop click.
+helpBtn.addEventListener("click", () => helpDialog.showModal());
+helpDialog.addEventListener("click", (ev: MouseEvent) => {
+  const r = helpDialog.getBoundingClientRect();
+  const outside =
+    ev.clientX < r.left || ev.clientX > r.right || ev.clientY < r.top || ev.clientY > r.bottom;
+  if (outside) helpDialog.close();
 });
 
 if (typeof ResizeObserver !== "undefined") {
@@ -699,3 +755,5 @@ resize();
 // Where the sensor needs no permission (Android/desktop), start listening now so
 // a shake works without a tap first. iOS waits for the first gesture instead.
 if (!needsMotionPermission) enableMotion();
+// Reveal the nudge last: the line above can hide it on Android, so show after.
+showHapticsCtaIfRelevant();

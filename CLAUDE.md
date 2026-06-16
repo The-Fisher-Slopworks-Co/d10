@@ -14,8 +14,15 @@ Use Bun for everything.
 - `bun run preview` — build, then serve `dist/` under a `/d10/` sub-path to mimic
   GitHub Pages project hosting (http://localhost:4173/d10/). Use this to catch
   base-path / relative-URL regressions before deploying.
+- **Testing haptics/shake on a phone:** `dev`/`preview` (Bun.serve) bind
+  `0.0.0.0`, so they're reachable on the LAN. But the Vibration API needs a prior
+  user gesture and the motion/shake APIs need a **secure context** — test
+  shake-to-roll over **HTTPS** (a self-signed cert works) or `localhost`; plain
+  HTTP to a LAN IP won't fire `devicemotion` / iOS `requestPermission`.
 - `bun test` — run the headless correctness tests (`test/roll.test.ts`).
 - `bun install` — install dev dependencies (only `@types/bun`).
+- `bunx tsc --noEmit` — typecheck (there's a `tsconfig.json` but no script; `bun
+  run build` does **not** typecheck, so run this after editing `.ts`).
 
 ## Layout
 

@@ -30,7 +30,47 @@
 
     <p class="hint" aria-hidden="true">Grab the die and fling it — or press Roll.</p>
 
+    <!-- Optional, capability-gated nudge. Hidden until main.ts confirms the
+         device can vibrate or needs the iOS motion-sensor permission, then
+         revealed. Tapping Enable is the user gesture that unlocks the
+         Vibration API / fires iOS's requestPermission() for shake-to-roll. -->
+    <div class="haptics-cta" id="hapticsCta" hidden>
+      <button class="haptics-cta__enable" id="hapticsEnable" type="button">Enable haptics</button>
+      <button class="haptics-cta__dismiss" id="hapticsDismiss" type="button" aria-label="Dismiss">×</button>
+    </div>
+
     <button class="roll-btn" id="rollBtn" type="button">Roll</button>
+
+    <!-- Corner help toggle + info dialog explaining the motion/haptic features. -->
+    <button
+      class="help-btn"
+      id="helpBtn"
+      type="button"
+      aria-label="About haptics and shake to roll"
+      aria-haspopup="dialog"
+    >
+      ?
+    </button>
+
+    <dialog class="help-dialog" id="helpDialog" aria-labelledby="helpTitle">
+      <h2 class="help-dialog__title" id="helpTitle">Haptics &amp; shake to roll</h2>
+      <div class="help-dialog__body">
+        <p>
+          <b>Haptics.</b> On phones that support it, the die gives a gentle buzz
+          when it lands and a rattle when you shake. iPhone web pages can't
+          vibrate, so they stay silent there.
+        </p>
+        <p>
+          <b>Shake to roll.</b> Give your phone a firm shake to throw the die,
+          like rattling it in a cup. iOS asks for Motion &amp; Orientation access
+          the first time — tap Allow (or use the on-screen Enable nudge). No
+          motion sensors? The Roll button always works.
+        </p>
+      </div>
+      <form method="dialog">
+        <button class="help-dialog__close" type="submit">Got it</button>
+      </form>
+    </dialog>
 
     <div class="sr-only" id="live" aria-live="polite" role="status"></div>
   </body>
