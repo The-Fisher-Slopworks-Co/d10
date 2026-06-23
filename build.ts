@@ -5,7 +5,7 @@
  * asset URLs (e.g. `./chunk-abc.js`). That is required for GitHub Pages
  * project sites, which are served from `https://<user>.github.io/<repo>/`.
  */
-import { rm } from "node:fs/promises";
+import { cp, rm } from "node:fs/promises";
 import path from "node:path";
 import { minifyHtml } from "./scripts/minify-html";
 
@@ -44,6 +44,11 @@ for (const output of result.outputs) {
       `${kb(encoder.encode(before).length)} KB → ${kb(encoder.encode(after).length)} KB`,
   );
 }
+
+// Copy `public/` verbatim into the site root. These are files that must keep
+// their exact name and bytes (robots.txt, sitemap.xml, llms.txt) — so they are
+// deliberately NOT run through Bun's bundler, which would hash/transform them.
+await cp(path.join(process.cwd(), "public"), outdir, { recursive: true });
 
 // GitHub Pages serves the custom domain only if a `CNAME` file sits at the
 // root of the published site. `dist/` is gitignored and rebuilt from scratch

@@ -1,0 +1,14 @@
+# robots.txt for https://d10.slopworks.org/
+# A single static page that rolls a ten-sided die. Crawl freely.
+
+User-agent: *
+Allow: /
+
+# Content usage signals — https://content-signals.org/
+# yes = permitted, no = not permitted.
+#   search    = build a search index and link to this page
+#   ai-input  = use this page as input to an AI assistant's answer
+#   ai-train  = use this page to train or fine-tune an AI model
+Content-Signal: search=yes, ai-input=yes, ai-train=yes
+
+Sitemap: https://d10.slopworks.org/sitemap.xml

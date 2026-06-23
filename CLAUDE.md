@@ -48,6 +48,12 @@ Use Bun for everything.
   drag-to-throw interaction, and all DOM wiring.
 - `src/style.css` — all styles and `@keyframes` (linked from the HTML).
 - `src/favicon.svg` — the d10 favicon.
+- `public/` — static files copied **verbatim** into the site root by `build.ts`
+  (they must keep their exact name/bytes, so they bypass Bun's bundler):
+  `robots.txt` (with a `Content-Signal:` line and a `Sitemap:` pointer),
+  `sitemap.xml`, and `llms.txt` (the [llmstxt.org](https://llmstxt.org)
+  machine-readable index for AI agents). The HTML head links the latter with
+  `<link rel="describedby" href="./llms.txt">`.
 - `test/roll.test.ts` — headless `bun test` asserting the geometry, the inertia
   tensor (symmetric top), settling (lands flat on one face in bounded time), and
   the **fairness** of the emergent result (seeded chi-square over thousands of

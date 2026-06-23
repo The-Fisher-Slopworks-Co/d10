@@ -1,0 +1,23 @@
+# d10
+
+> Roll a single ten-sided die, beautifully. A tiny, dependency-free web toy: one d10 you can grab and throw. The die is a real pentagonal trapezohedron simulated as a rigid body on a canvas — fling it and it tumbles, bounces, and settles on whatever face lands up. Nothing is decided up front; the result is emergent and provably fair.
+
+Key facts:
+
+- A single static page — no backend, no API, no accounts, no tracking, no network calls. It works offline.
+- Built with Bun and vanilla TypeScript: a hand-written canvas 3D renderer and a hand-written rigid-body physics engine (no three.js, no cannon/rapier), bundled to static files and served from GitHub Pages behind Cloudflare.
+- Fairness is emergent: each throw starts from a uniform-random orientation and tumbles hard on an isohedral solid, so every digit 1–10 is equally likely. A seeded chi-square test over thousands of simulated throws guards it.
+- Accessible: honors `prefers-reduced-motion` with a calm fallback (a fair result snapped flat, no tumble), is fully keyboard-operable, and announces each result via an `aria-live` region.
+
+## How to use it
+
+- [d10 — roll a ten-sided die](https://d10.slopworks.org/): the app itself. Grab the die on the canvas and fling it to throw, or press Roll (Space/Enter) for a fair machine throw. On a phone you can also shake to roll.
+
+## Source
+
+- [Source repository](https://github.com/The-Fisher-Slopworks-Co/d10): full source — the pentagonal-trapezohedron geometry and 3D math, the rigid-body simulator, the seedable RNG, the canvas renderer, and the headless fairness test.
+- [README](https://github.com/The-Fisher-Slopworks-Co/d10/blob/main/README.md): features, tech stack, local development, and deployment notes.
+
+## License
+
+- [AGPL-3.0-or-later](https://github.com/The-Fisher-Slopworks-Co/d10/blob/main/LICENSE): the project is free software under the GNU Affero General Public License, version 3 or later.
